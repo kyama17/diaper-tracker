@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>赤ちゃんのおしっことうんち記録</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>赤ちゃんのおしっことうんち記録</h1>
@@ -23,6 +24,30 @@
         </div>
         <button type="submit">記録する</button>
     </form>
+
+    <h2>統計グラフ</h2>
+    <div id="chartsContainer">
+        <div class="chart-section">
+            <h3>おしっこ・うんちの比率</h3>
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-section">
+            <h3>日別記録数</h3>
+            <div class="chart-wrapper">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-section">
+            <h3>時間帯別分析</h3>
+            <div class="chart-wrapper">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+    </div>
 
     <h2>記録一覧</h2>
     <ul id="logList">
