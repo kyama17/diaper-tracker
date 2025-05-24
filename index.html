@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赤ちゃんのおしっことうんち記録</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>赤ちゃんのおしっことうんち記録</h1>
+
+    <form id="logForm">
+        <div>
+            <label for="eventType">種類:</label>
+            <select id="eventType" name="eventType">
+                <option value="pee">おしっこ</option>
+                <option value="poop">うんち</option>
+            </select>
+        </div>
+        <div>
+            <label for="eventTime">時間:</label>
+            <input type="datetime-local" id="eventTime" name="eventTime" required>
+        </div>
+        <button type="submit">記録する</button>
+    </form>
+
+    <h2>記録一覧</h2>
+    <ul id="logList">
+        <!-- 記録はここに表示されます -->
+    </ul>
+
+    <script src="script.js"></script>
+    <script src="test.js"></script>
+</body>
+</html>
