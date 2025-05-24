@@ -7,29 +7,44 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>赤ちゃんのおしっことうんち記録</h1>
-
-    <form id="logForm">
-        <div>
-            <label for="eventType">種類:</label>
-            <select id="eventType" name="eventType">
-                <option value="pee">おしっこ</option>
-                <option value="poop">うんち</option>
-            </select>
+    <header>
+        <h1>赤ちゃんのおしっことうんち記録</h1>
+        <div id="authContainer">
+            <button id="loginButton" style="display: none;">ログイン</button>
+            <button id="logoutButton" style="display: none;">ログアウト</button>
         </div>
-        <div>
-            <label for="eventTime">時間:</label>
-            <input type="datetime-local" id="eventTime" name="eventTime" required>
+        <div id="userInfo" style="display: none;">
+            <p>ようこそ、<span id="userName"></span> さん</p>
         </div>
-        <button type="submit">記録する</button>
-    </form>
+    </header>
 
-    <h2>記録一覧</h2>
-    <ul id="logList">
-        <!-- 記録はここに表示されます -->
-    </ul>
+    <main id="appContent" style="display: none;">
+        <form id="logForm">
+            <div>
+                <label for="eventType">種類:</label>
+                <select id="eventType" name="eventType">
+                    <option value="pee">おしっこ</option>
+                    <option value="poop">うんち</option>
+                </select>
+            </div>
+            <div>
+                <label for="eventTime">時間:</label>
+                <input type="datetime-local" id="eventTime" name="eventTime" required>
+            </div>
+            <button type="submit">記録する</button>
+        </form>
 
+        <h2>記録一覧</h2>
+        <ul id="logList">
+            <!-- 記録はここに表示されます -->
+        </ul>
+    </main>
+
+    <div id="loadingMessage">
+        <p>読み込み中...</p>
+    </div>
+    
     <script src="script.js"></script>
-    <script src="test.js"></script>
+    <script src="test.js"></script> 
 </body>
 </html>
