@@ -154,7 +154,7 @@ npm run start:frontend
 ### 1. コード変更 (Code Changes)
 
 -   **`backend/server.js`**:
-    -   Express アプリケーション (`app`) をエクスポートするように変更し、`app.listen()` の呼び出しを削除（または条件付きに）します。Cloudflare Workers は独自の方法で HTTP リクエストを処理します。
+    -   Express アプリケーション (`app`) がエクスポートされ、`app.listen()` の呼び出しが無効化されています。これにより、Cloudflare Workers がHTTPリクエストを処理できるようになっています。
     ```javascript
     // backend/server.js の変更例
     const express = require('express');
@@ -162,9 +162,9 @@ npm run start:frontend
     // ... (既存のミドルウェアとルート設定)
     module.exports = app; // app をエクスポート
     ```
--   **`src/index.js` (新規作成):**
-    -   このファイルをプロジェクトのルート直下に `src` フォルダを作成して配置します (例: `<project_root>/src/index.js`)。これが Worker のエントリーポイントになります。
-    -   このスクリプトは `backend/server.js` から `app` をインポートし、Cloudflare の `fetch` イベントを Express アプリが処理できるようにするためのアダプターロジックを含みます。
+-   **`src/index.js`:**
+    -   このファイルはプロジェクトのルート直下の `src` フォルダに配置されており、Worker のエントリーポイントとして機能します。
+    -   スクリプトは `backend/server.js` から `app` をインポートし、Cloudflare の `fetch` イベントを Express アプリが処理できるようにするための基本的なアダプターロジック構造を含んでいます。
     ```javascript
     // src/index.js の基本構造
     import app from '../backend/server.js'; // backend/server.js へのパスを調整

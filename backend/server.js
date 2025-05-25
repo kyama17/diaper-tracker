@@ -138,12 +138,14 @@ app.delete('/api/logs/:id', requiresAuth(), async (req, res) => {
 
 // Connect to DB and then start server
 connectToDb().then(() => {
-    app.listen(port, () => {
-        console.log(`Server listening on http://localhost:${port}`);
-        console.log('Test API endpoints using a tool like Postman or curl after logging in.');
-        console.log('Ensure your .env file is correctly set up with Auth0 and MongoDB credentials.');
-    });
+    // app.listen(port, () => {
+    //     console.log(`Server listening on http://localhost:${port}`);
+    //     console.log('Test API endpoints using a tool like Postman or curl after logging in.');
+    //     console.log('Ensure your .env file is correctly set up with Auth0 and MongoDB credentials.');
+    // });
 }).catch(err => {
     console.error('Failed to connect to database before starting server:', err);
     process.exit(1);
 });
+
+module.exports = app;
