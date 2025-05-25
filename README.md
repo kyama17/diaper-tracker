@@ -17,7 +17,7 @@
 
 ## 使い方 (How to Use)
 
-1. ブラウザで `index.html` を開きます
+1. ブラウザで [`public/index.html`](public/index.html) を開きます
 2. 種類（おしっこ/うんち）を選択します
 3. 時間を設定します（デフォルトで現在時刻が設定されます）
 4. 「記録する」ボタンをクリックします
@@ -28,16 +28,26 @@
 
 ```
 diaper-tracker/
-├── index.html      # メインのHTMLファイル
-├── script.js       # JavaScript機能
-├── style.css       # スタイルシート
-├── test.js         # テストファイル
-└── README.md       # このファイル
+├── public/
+│   ├── index.html      # メインのHTMLファイル
+│   ├── script.js       # JavaScript機能
+│   ├── style.css       # スタイルシート
+│   └── test.js         # テストファイル
+├── backend/
+│   ├── server.js       # Node.jsサーバー
+│   ├── db.js           # データベース設定
+│   ├── package.json    # Node.js依存関係
+│   └── package-lock.json
+└── README.md           # このファイル
 ```
 
 ## 技術仕様 (Technical Specifications)
 
 - **フロントエンド**: HTML5, CSS3, Vanilla JavaScript
+  - メインファイル: [`public/index.html`](public/index.html), [`public/script.js`](public/script.js), [`public/style.css`](public/style.css)
+- **バックエンド**: Node.js (オプション)
+  - サーバーファイル: [`backend/server.js`](backend/server.js)
+  - 依存関係: [`backend/package.json`](backend/package.json)
 - **グラフライブラリ**: Chart.js 4.x
 - **データ保存**: ブラウザのローカルストレージ
 - **対応ブラウザ**: モダンブラウザ（Chrome, Firefox, Safari, Edge）
@@ -45,7 +55,7 @@ diaper-tracker/
 
 ## セットアップ (Setup)
 
-このアプリケーションはサーバーを必要としません。以下の手順で実行できます：
+このアプリケーションはサーバーを必要としません。以下の簡単な手順ですぐに使い始められます：
 
 1. リポジトリをクローンまたはダウンロード
 ```bash
@@ -53,9 +63,10 @@ git clone https://github.com/kyama17/diaper-tracker.git
 cd diaper-tracker
 ```
 
-2. ブラウザで `index.html` を開く
+2. ブラウザで [`public/index.html`](public/index.html) を開く
 ```bash
 # ローカルサーバーを起動する場合（推奨）
+cd public
 python -m http.server 8000
 # または
 npx serve .
@@ -65,9 +76,9 @@ npx serve .
 
 ## テスト (Testing)
 
-アプリケーションには自動テストが含まれています：
+アプリケーションには自動テストが含まれています（[`public/test.js`](public/test.js)）：
 
-1. ブラウザで `index.html` を開く
+1. ブラウザで [`public/index.html`](public/index.html) を開く
 2. 開発者ツールのコンソールを開く
 3. `runAllTests()` を実行
 
@@ -101,12 +112,21 @@ npx serve .
 
 ## 貢献 (Contributing)
 
-プルリクエストや課題報告を歓迎します。以下の手順で貢献できます：
+プルリクエストや課題報告を歓迎します！以下の手順で貢献していただけます：
 
 1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+2. 機能ブランチを作成
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. 変更をコミット
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
+4. ブランチにプッシュ
+   ```bash
+   git push origin feature/amazing-feature
+   ```
 5. プルリクエストを作成
 
 ## 今後の改善予定 (Future Improvements)
@@ -125,4 +145,4 @@ kyama17
 
 ---
 
-*このアプリケーションは赤ちゃんの健康管理をサポートするために作成されました。*
+*このアプリケーションは赤ちゃんの健康管理をサポートし、育児をより楽にするために作成されました。ご質問やご提案がございましたら、お気軽にお声かけください！*
