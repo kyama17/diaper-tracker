@@ -147,6 +147,104 @@ npm run start:frontend
 - [ ] 週別・月別の統計表示
 - [ ] 平均間隔の計算機能
 
+## Cloudflare Workers デプロイ設定 (Cloudflare Workers Deployment)
+
+このアプリケーションはCloudflare Workersにもデプロイできます。以下はそのための設定ガイドです。
+
+### 1. コード変更 (Code Changes)
+
+-   **`backend/server.js`**:
+    -   Express アプリケーション (`app`) をエクスポートするように変更し、`app.listen()` の呼び出しを削除（または条件付きに）します。Cloudflare Workers は独自の方法で HTTP リクエストを処理します。
+    ```javascript
+    // backend/server.js の変更例
+    const express = require('express');
+    const app = express();
+    // ... (既存のミドルウェアとルート設定)
+    module.exports = app; // app をエクスポート
+    ```
+-   **`src/index.js` (新規作成):**
+    -   このファイルをプロジェクトのルート直下に `src` フォルダを作成して配置します (例: `<project_root>/src/index.js`)。これが Worker のエントリーポイントになります。
+    -   このスクリプトは `backend/server.js` から `app` をインポートし、Cloudflare の `fetch` イベントを Express アプリが処理できるようにするためのアダプターロジックを含みます。
+    ```javascript
+    // src/index.js の基本構造
+    import app from '../backend/server.js'; // backend/server.js へのパスを調整
+
+    // Express アプリを Cloudflare Workers の fetch ハンドラに接続するアダプターが必要です。
+    // (例: 'hono' や他のアダプターライブラリを使用するか、カスタムで実装)
+    // このアダプターは Cloudflare Request を Express が理解できる形式に変換し、
+    // Express のレスポンスを Cloudflare Response に変換します。
+
+    export default {
+      async fetch(request, env, ctx) {
+        // ここにアダプターロジックを実装します。
+        // return await someAdapter(app)(request, env, ctx);
+        return new Response('Adapter logic for Express on Cloudflare Workers needed here.', { status: 501 });
+      }
+    };
+    ```
+    -   **注意**: 適切なアダプターの実装は主要な開発作業となります。
+
+### 2. Wrangler 設定 (`wrangler.toml`)
+
+プロジェクトルートに `wrangler.toml` ファイルを作成し、以下のように設定します。
+
+```toml
+# wrangler.toml
+name = "your-diaper-tracker-worker" # Cloudflare でのワーカー名
+main = "src/index.js"               # Worker のエントリーポイント
+
+compatibility_date = "2024-09-23"   # Node.js 互換機能などを有効化
+compatibility_flags = [ "nodejs_compat" ]
+
+# 静的アセット (public フォルダ) の配信設定
+[site]
+bucket = "./public"
+
+# ビルド設定
+[build]
+command = "npm install" # 依存関係をインストール
+
+# 環境変数 (非シークレット)
+[vars]
+AUTH0_CLIENT_ID = "your_production_auth0_client_id"
+AUTH0_ISSUER_BASE_URL = "https://your-auth0-domain.auth0.com"
+# 他の必要な非シークレット変数をここに追加
+```
+
+### 3. 環境変数とシークレット (Environment Variables & Secrets)
+
+-   **非シークレット**: `wrangler.toml` の `[vars]` セクションに設定します。
+-   **シークレット** (`MONGODB_URI`, `AUTH0_SECRET`, `AUTH0_CLIENT_SECRET` など):
+    -   `wrangler.toml` には記載せず、以下のコマンドで Cloudflare に安全に保存します。
+        ```bash
+        npx wrangler secret put MONGODB_URI
+        npx wrangler secret put AUTH0_SECRET
+        # 他のシークレットも同様に設定
+        ```
+    -   `npx wrangler secret put VAR_NAME --local` でローカル開発用のシークレットも設定できます。
+
+### 4. ビルドコマンド (Build Command)
+
+-   `wrangler.toml` の `[build]` セクションに `command = "npm install"` と指定します。
+-   これにより、デプロイ時に `npm install` が実行され、必要なパッケージがインストールされます。
+
+### 5. デプロイコマンド (Deployment Command)
+
+1.  **Wrangler にログイン:**
+    ```bash
+    npx wrangler login
+    ```
+2.  **シークレットを設定** (上記参照)。
+3.  **デプロイ実行:**
+    ```bash
+    npx wrangler deploy
+    ```
+    環境に応じて `npx wrangler deploy -e <environment_name>` も使用可能です。
+
+### 6. ルートディレクトリ (Root Directory for Cloudflare UI)
+
+Cloudflare ダッシュボードで設定する場合、「ルートディレクトリ」は通常、`wrangler.toml` が存在するプロジェクトのルートディレクトリを指します。
+
 ## 作者 (Author)
 
 kyama17
