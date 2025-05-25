@@ -63,16 +63,24 @@ git clone https://github.com/kyama17/diaper-tracker.git
 cd diaper-tracker
 ```
 
-2. ブラウザで [`public/index.html`](public/index.html) を開く
+2. 必要なパッケージをインストール
 ```bash
-# ローカルサーバーを起動する場合（推奨）
-cd public
-python -m http.server 8000
-# または
-npx serve .
+npm install
 ```
 
-3. ブラウザで `http://localhost:8000` にアクセス
+3. アプリケーションを起動
+```bash
+# バックエンドとフロントエンドの両方を同時に起動
+npm start
+
+# または、個別に起動
+# バックエンドを起動
+npm run start:backend
+# フロントエンドを起動
+npm run start:frontend
+```
+
+4. ブラウザで `http://localhost:5000` にアクセス
 
 ## テスト (Testing)
 

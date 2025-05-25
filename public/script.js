@@ -116,13 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (loginButton) {
         loginButton.addEventListener('click', () => {
-            window.location.href = '/login'; // Redirect to backend login route
+            window.location.href = 'http://localhost:3001/login'; // Redirect to backend login route
         });
     }
 
     if (logoutButton) {
         logoutButton.addEventListener('click', () => {
-            window.location.href = '/logout'; // Redirect to backend logout route
+            window.location.href = 'http://localhost:3001/logout'; // Redirect to backend logout route
         });
     }
 
