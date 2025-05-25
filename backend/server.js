@@ -1,4 +1,13 @@
 require('dotenv').config();
+
+// Log Auth0 environment variables
+console.log("AUTH0_SECRET is set:", !!process.env.AUTH0_SECRET);
+console.log("AUTH0_BASE_URL:", process.env.AUTH0_BASE_URL);
+console.log("AUTH0_CLIENT_ID:", process.env.AUTH0_CLIENT_ID);
+console.log("AUTH0_CLIENT_SECRET is set:", !!process.env.AUTH0_CLIENT_SECRET);
+console.log("AUTH0_ISSUER_BASE_URL:", process.env.AUTH0_ISSUER_BASE_URL);
+
+const path = require('path'); // Import path module
 const express = require('express');
 const { auth, requiresAuth } = require('express-openid-connect');
 const { connectToDb, getDb } = require('./db');
@@ -6,6 +15,24 @@ const { ObjectId } = require('mongodb'); // <-- Ensure this is imported
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Critical Auth0 configuration checks
+if (!process.env.AUTH0_SECRET) {
+  console.error('CRITICAL ERROR: AUTH0_SECRET is not defined or empty. Please check your .env file or environment variables.');
+  process.exit(1);
+}
+if (!process.env.AUTH0_BASE_URL) {
+  console.error('CRITICAL ERROR: AUTH0_BASE_URL is not defined or empty. Please check your .env file or environment variables.');
+  process.exit(1);
+}
+if (!process.env.AUTH0_CLIENT_ID) {
+  console.error('CRITICAL ERROR: AUTH0_CLIENT_ID is not defined or empty. Please check your .env file or environment variables.');
+  process.exit(1);
+}
+if (!process.env.AUTH0_ISSUER_BASE_URL) {
+  console.error('CRITICAL ERROR: AUTH0_ISSUER_BASE_URL is not defined or empty. Please check your .env file or environment variables.');
+  process.exit(1);
+}
 
 const config = {
   authRequired: false,
@@ -20,6 +47,10 @@ const config = {
 app.use(auth(config));
 app.use(express.json());
 
+// Serve static files from the 'public' directory (one level up from 'backend', then into 'public')
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+/*
 app.get('/', (req, res) => {
   let responseText = '<h1>Welcome!</h1>';
   if (req.oidc.isAuthenticated()) {
@@ -32,6 +63,7 @@ app.get('/', (req, res) => {
   }
   res.send(responseText);
 });
+*/
 
 app.get('/profile', requiresAuth(), (req, res) => {
   res.json(req.oidc.user);
