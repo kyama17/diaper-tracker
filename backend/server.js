@@ -47,8 +47,7 @@ const config = {
 app.use(auth(config));
 app.use(express.json());
 
-// Serve static files from the 'public' directory (one level up from 'backend', then into 'public')
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Static file serving removed as it's handled by Cloudflare Pages.
 
 /*
 app.get('/', (req, res) => {

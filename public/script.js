@@ -1,67 +1,102 @@
 // script.js
 
-
-// Functions that contain core logic, made global for testing
-function getLogs() {
-    return JSON.parse(localStorage.getItem('logs')) || [];
-}
-
-function saveLogs(logs) {
-    localStorage.setItem('logs', JSON.stringify(logs));
-}
-
-function addLog(type, time) {
-    const logs = getLogs();
-    // Ensure eventTimeInput is available or pass its value if this function is called before DOM ready
-    // For testing, we'll pass time directly.
-    const eventTimeValue = time || document.getElementById('eventTime').value; 
-    if (eventTimeValue) {
-        const logEntry = { type, time: eventTimeValue, id: Date.now() };
-        logs.push(logEntry);
-        saveLogs(logs);
-        renderLogs(); // Assumes DOM is ready when addLog is called by user
+// API-based log management functions (moved from DOMContentLoaded)
+async function loadLogs() {
+    try {
+        const response = await fetch('/api/logs');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch logs: ${response.statusText}`);
+        }
+        const logs = await response.json();
+        renderLogs(logs); // Call the global renderLogs
+        updateCharts(logs); // Call global updateCharts
+    } catch (error) {
+        console.error('Error loading logs:', error);
+        const logListUl = document.getElementById('logList');
+        if(logListUl) logListUl.innerHTML = '<li>ログの読み込みに失敗しました。</li>';
     }
 }
 
-function deleteLog(id) {
-    let logs = getLogs();
-    logs = logs.filter(log => log.id !== id);
-    saveLogs(logs);
-    renderLogs(); // Assumes DOM is ready
-}
-
-function renderLogs() {
-    // This function heavily depends on DOM elements like logList
-    const logList = document.getElementById('logList');
-    if (!logList) { // Guard clause for when tests run before DOM fully interactive for this element
-        console.warn("logList element not found during renderLogs. If running tests, ensure DOM is ready or mock.");
+async function addLog(eventType, eventTime) {
+    if (!eventTime) {
+        alert('時間を入力してください。');
         return;
     }
-    logList.innerHTML = ''; // Clear existing logs
-    const logs = getLogs();
-    logs.sort((a, b) => new Date(b.time) - new Date(a.time)); 
+    try {
+        const response = await fetch('/api/logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ eventType, eventTime }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Failed to add log: ${response.statusText}`);
+        }
+        loadLogs(); // Refresh the list
+    } catch (error) {
+        console.error('Error adding log:', error);
+        alert(`ログの追加に失敗しました: ${error.message}`);
+    }
+}
+
+async function deleteLog(logId) {
+    if (!confirm('この記録を削除しますか？')) {
+        return;
+    }
+    try {
+        const response = await fetch(`/api/logs/${logId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+             const errorData = await response.json();
+            throw new Error(errorData.message || `Failed to delete log: ${response.statusText}`);
+        }
+        loadLogs(); // Refresh the list
+    } catch (error) {
+        console.error('Error deleting log:', error);
+        alert(`ログの削除に失敗しました: ${error.message}`);
+    }
+}
+
+// Consolidated renderLogs function (adapted from DOMContentLoaded version)
+function renderLogs(logs) {
+    const logListUl = document.getElementById('logList');
+    if (!logListUl) {
+        // If logList isn't on the page, charts might also not be.
+        // However, updateCharts itself has guards for chart elements.
+        if (logs && logs.length > 0) {
+             // Still update charts even if log list isn't there, maybe on a different page view
+        } else {
+            updateCharts([]); // Ensure charts are cleared if no logs
+        }
+        return; 
+    }
+    logListUl.innerHTML = ''; // Clear existing logs
+
+    if (!logs || logs.length === 0) {
+        logListUl.innerHTML = '<li>記録はありません。</li>';
+        updateCharts([]); // Ensure charts are cleared if no logs
+        return;
+    }
+
+    logs.sort((a, b) => new Date(b.eventTime) - new Date(a.eventTime)); 
 
     logs.forEach(log => {
         const listItem = document.createElement('li');
-        const eventTypeDisplay = log.type === 'pee' ? 'おしっこ' : 'うんち';
-        const displayTime = new Date(log.time).toLocaleString('ja-JP');
-        listItem.textContent = `${displayTime} - ${eventTypeDisplay}`;
+        const eventTypeDisplay = log.eventType === 'pee' ? 'おしっこ' : 'うんち';
+        const displayTime = log.eventTime ? new Date(log.eventTime).toLocaleString('ja-JP') : '無効な時間';
+        
+        listItem.textContent = `${displayTime} - ${eventTypeDisplay} `; 
 
         const deleteButton = document.createElement('button');
         deleteButton.textContent = '削除';
-        // Important: For tests, ensure deleteLog is accessible globally or passed correctly
-        deleteButton.onclick = () => deleteLog(log.id); 
+        deleteButton.onclick = () => deleteLog(log._id); // Uses global deleteLog
         listItem.appendChild(deleteButton);
 
-        logList.appendChild(listItem);
+        logListUl.appendChild(listItem);
     });
-    
-    // グラフを更新
-    updateCharts();
-}
-
-function loadLogs() {
-    renderLogs();
 }
 
 // DOM-dependent initializations
@@ -75,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const logForm = document.getElementById('logForm');
     const eventTimeInput = document.getElementById('eventTime');
-    const logListUl = document.getElementById('logList');
+    // const logListUl = document.getElementById('logList'); // No longer needed here, renderLogs is global
 
     // --- Authentication and UI Management ---
 
@@ -85,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const user = await response.json();
                 updateUIForAuthState(user);
-                loadLogs(); // Load logs if user is authenticated
+                window.loadLogs(); // Call global loadLogs
             } else {
                 // Not authenticated or error fetching profile
                 updateUIForAuthState(null);
@@ -116,103 +151,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (loginButton) {
         loginButton.addEventListener('click', () => {
-            window.location.href = 'http://localhost:3001/login'; // Redirect to backend login route
+            window.location.href = '/login'; // Redirect to backend login route
         });
     }
 
     if (logoutButton) {
         logoutButton.addEventListener('click', () => {
-            window.location.href = 'http://localhost:3001/logout'; // Redirect to backend logout route
+            window.location.href = '/logout'; // Redirect to backend logout route
         });
     }
 
-    // --- Log Management ---
-
-    async function loadLogs() {
-        try {
-            const response = await fetch('/api/logs');
-            if (!response.ok) {
-                throw new Error(`Failed to fetch logs: ${response.statusText}`);
-            }
-            const logs = await response.json();
-            renderLogs(logs);
-        } catch (error) {
-            console.error('Error loading logs:', error);
-            if(logListUl) logListUl.innerHTML = '<li>ログの読み込みに失敗しました。</li>';
-        }
-    }
-
-    function renderLogs(logs) {
-        if (!logListUl) return;
-        logListUl.innerHTML = ''; // Clear existing logs
-
-        if (!logs || logs.length === 0) {
-            logListUl.innerHTML = '<li>記録はありません。</li>';
-            return;
-        }
-
-        logs.sort((a, b) => new Date(b.eventTime) - new Date(a.eventTime)); // Ensure sorting, though API might do it
-
-        logs.forEach(log => {
-            const listItem = document.createElement('li');
-            const eventTypeDisplay = log.eventType === 'pee' ? 'おしっこ' : 'うんち';
-            // Ensure eventTime is valid before calling toLocaleString
-            const displayTime = log.eventTime ? new Date(log.eventTime).toLocaleString('ja-JP') : '無効な時間';
-            
-            listItem.textContent = `${displayTime} - ${eventTypeDisplay} `; // Added space for button
-
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = '削除';
-            deleteButton.onclick = () => deleteLog(log._id); // Use _id from MongoDB
-            listItem.appendChild(deleteButton);
-
-            logListUl.appendChild(listItem);
-        });
-    }
-
-    async function addLog(eventType, eventTime) {
-        if (!eventTime) {
-            alert('時間を入力してください。');
-            return;
-        }
-        try {
-            const response = await fetch('/api/logs', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ eventType, eventTime }),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Failed to add log: ${response.statusText}`);
-            }
-            // const newLog = await response.json(); // Contains the added log with _id
-            loadLogs(); // Refresh the list
-        } catch (error) {
-            console.error('Error adding log:', error);
-            alert(`ログの追加に失敗しました: ${error.message}`);
-        }
-    }
-
-    async function deleteLog(logId) {
-        if (!confirm('この記録を削除しますか？')) {
-            return;
-        }
-        try {
-            const response = await fetch(`/api/logs/${logId}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) {
-                 const errorData = await response.json();
-                throw new Error(errorData.message || `Failed to delete log: ${response.statusText}`);
-            }
-            loadLogs(); // Refresh the list
-        } catch (error) {
-            console.error('Error deleting log:', error);
-            alert(`ログの削除に失敗しました: ${error.message}`);
-        }
-    }
+    // --- Log Management functions are now global ---
 
     // --- Initial Setup ---
     if (eventTimeInput) {
@@ -232,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             const eventType = document.getElementById('eventType').value;
             const eventTimeValue = eventTimeInput ? eventTimeInput.value : null;
-            addLog(eventType, eventTimeValue);
+            window.addLog(eventType, eventTimeValue); // Call global addLog
             // Reset time to current after submission (optional, or clear it)
             if (eventTimeInput) {
                  const now = new Date();
@@ -245,11 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchUserStatusAndLoadApp(); // Check auth status and load initial data
-
-    // Expose functions for testing if needed, though direct interaction is better
-    // window.addLog = addLog; 
-    // window.deleteLog = deleteLog;
-    // window.loadLogs = loadLogs;
+    // Global exports for test.js are handled at the end of the script.
 });
 
 
@@ -259,12 +204,14 @@ let dailyChart = null;
 let hourlyChart = null;
 
 // グラフ用のデータ処理関数
-function getChartData() {
-    const logs = getLogs();
-    
+// グラフ用のデータ処理関数
+function getChartData(logs) {
+    if (!logs) { // Ensure logs is not null or undefined
+        logs = [];
+    }
     // おしっこ・うんちの比率データ
-    const peeCount = logs.filter(log => log.type === 'pee').length;
-    const poopCount = logs.filter(log => log.type === 'poop').length;
+    const peeCount = logs.filter(log => log.eventType === 'pee').length;
+    const poopCount = logs.filter(log => log.eventType === 'poop').length;
     
     // 日別データ（過去7日間）
     const dailyData = {};
@@ -280,9 +227,12 @@ function getChartData() {
     
     // ログデータを日別に集計
     logs.forEach(log => {
-        const logDate = new Date(log.time).toISOString().split('T')[0];
-        if (dailyData[logDate]) {
-            dailyData[logDate][log.type]++;
+        // Ensure log.eventTime is valid before creating a Date object
+        if (log.eventTime) {
+            const logDate = new Date(log.eventTime).toISOString().split('T')[0];
+            if (dailyData[logDate]) {
+                dailyData[logDate][log.eventType]++;
+            }
         }
     });
     
@@ -293,8 +243,11 @@ function getChartData() {
     }
     
     logs.forEach(log => {
-        const hour = new Date(log.time).getHours();
-        hourlyData[hour][log.type]++;
+        // Ensure log.eventTime is valid before creating a Date object
+        if (log.eventTime) {
+            const hour = new Date(log.eventTime).getHours();
+            hourlyData[hour][log.eventType]++;
+        }
     });
     
     return {
@@ -460,19 +413,22 @@ function createHourlyChart(data) {
 }
 
 // すべてのグラフを更新
-function updateCharts() {
-    const data = getChartData();
+function updateCharts(logs) {
+    const data = getChartData(logs); // Pass logs to getChartData
     createPieChart(data.pie);
     createDailyChart(data.daily);
     createHourlyChart(data.hourly);
 }
 
 // Make functions globally accessible for test.js
-// This is a simple way; modules (ES6, CommonJS) would be better for larger apps.
 window.addLog = addLog;
-window.getLogs = getLogs;
+// window.getLogs; // Removed, no direct synchronous equivalent from API
 window.deleteLog = deleteLog;
 window.loadLogs = loadLogs;
-window.renderLogs = renderLogs; // Though test.js doesn't call it directly, it's called by others
-window.saveLogs = saveLogs; // If tests need to manipulate logs directly
+window.renderLogs = renderLogs;
+// window.saveLogs; // Removed
 window.updateCharts = updateCharts;
+// Expose chart instances if tests need to inspect them (optional)
+// window.pieChartInstance = () => pieChart;
+// window.dailyChartInstance = () => dailyChart;
+// window.hourlyChartInstance = () => hourlyChart;
