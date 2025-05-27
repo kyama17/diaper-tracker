@@ -18,3 +18,12 @@ command = "npm install" # Install dependencies
 AUTH0_CLIENT_ID = "your_production_auth0_client_id"
 AUTH0_ISSUER_BASE_URL = "https://your-auth0-domain.auth0.com"
 # Add other necessary non-secret variables here
+
+[env.staging]
+name = "your-diaper-tracker-worker"
+# Staging environment variables (vars are not inherited, define them explicitly here)
+[env.staging.vars]
+AUTH0_CLIENT_ID = "your_production_auth0_client_id" # Or a staging specific one if available
+AUTH0_ISSUER_BASE_URL = "https://your-auth0-domain.auth0.com" # Or a staging specific one
+# Add other necessary non-secret variables here
+# route = "staging-your-app.your-domain.com/*" # Optional: if you have a specific route for staging
