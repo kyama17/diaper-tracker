@@ -52,6 +52,13 @@ export default {
         // Fallback if ASSETS.fetch is not available (e.g., misconfiguration)
         // This could be a 404 or a specific error message.
         // For now, let's return a clear message indicating the issue.
+        console.log('env keys:', Object.keys(env));
+        if (env.ASSETS) {
+          console.log('typeof env.ASSETS:', typeof env.ASSETS);
+          if (typeof env.ASSETS === 'object') {
+            console.log('env.ASSETS keys:', Object.keys(env.ASSETS));
+          }
+        }
         console.warn('env.ASSETS.fetch is not available. Ensure [site] is configured in wrangler.toml for static assets.');
         return new Response('Static asset serving is not configured.', { status: 404 });
       }
