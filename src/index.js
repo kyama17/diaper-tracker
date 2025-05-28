@@ -39,20 +39,27 @@ export default {
       }
     } else {
       // If no pattern matches, delegate to static asset serving
-      // Ensure env.ASSETS is available and is a fetch handler
-      if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      // Ensure env.__STATIC_CONTENT is available and is a fetch handler
+      if (env.__STATIC_CONTENT && typeof env.__STATIC_CONTENT.fetch === 'function') {
         try {
-          return await env.ASSETS.fetch(request);
+          return await env.__STATIC_CONTENT.fetch(request);
         } catch (error) {
-          console.error('Error fetching from ASSETS:', error);
-          // If ASSETS.fetch fails, return a generic error or a specific message
+          console.error('Error fetching from __STATIC_CONTENT:', error);
+          // If __STATIC_CONTENT.fetch fails, return a generic error or a specific message
           return new Response('Error serving static asset', { status: 500 });
         }
       } else {
-        // Fallback if ASSETS.fetch is not available (e.g., misconfiguration)
+        // Fallback if __STATIC_CONTENT.fetch is not available (e.g., misconfiguration)
         // This could be a 404 or a specific error message.
         // For now, let's return a clear message indicating the issue.
-        console.warn('env.ASSETS.fetch is not available. Ensure [site] is configured in wrangler.toml for static assets.');
+        console.log('env keys:', Object.keys(env));
+        if (env.__STATIC_CONTENT) {
+          console.log('typeof env.__STATIC_CONTENT:', typeof env.__STATIC_CONTENT);
+          if (typeof env.__STATIC_CONTENT === 'object') {
+            console.log('env.__STATIC_CONTENT keys:', Object.keys(env.__STATIC_CONTENT));
+          }
+        }
+        console.warn('env.__STATIC_CONTENT.fetch is not available. Ensure [site] is configured in wrangler.toml and the binding is correctly named __STATIC_CONTENT.');
         return new Response('Static asset serving is not configured.', { status: 404 });
       }
     }
