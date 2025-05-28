@@ -37,28 +37,32 @@ export default {
         console.error('Error fetching from backend:', error);
         return new Response('Error proxying request to backend', { status: 502 }); // Bad Gateway
       }
-    } else {
-      // If no pattern matches, delegate to static asset serving
-      // Ensure env.ASSETS is available and is a fetch handler
+    } else { // Not a proxy request, try to serve static assets
       if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
         try {
-          return await env.ASSETS.fetch(request);
+            const assetResponse = await env.ASSETS.fetch(request);
+            if (assetResponse.status === 404) {
+                const acceptHeader = request.headers.get('Accept');
+                if (acceptHeader && acceptHeader.includes('text/html')) {
+                    // This is a navigation request to a non-existent path, serve index.html for SPA routing
+                    const spaRequest = new Request(new URL('/index.html', request.url).toString(), {
+                        method: request.method, // Should usually be GET for SPA fallbacks
+                        headers: request.headers // Pass original headers
+                    });
+                    return env.ASSETS.fetch(spaRequest);
+                }
+            }
+            // If not a 404, or if it's a 404 for a non-HTML asset, return the original response
+            return assetResponse;
         } catch (error) {
-          console.error('Error fetching from ASSETS:', error);
-          // If ASSETS.fetch fails, return a generic error or a specific message
-          return new Response('Error serving static asset', { status: 500 });
+            console.error('Error fetching from ASSETS:', error);
+            // Potentially, some errors could also be candidates for SPA fallback,
+            // but typically we only do it for 404s.
+            // For now, keep original error handling for other cases.
+            return new Response('Error serving static asset', { status: 500 });
         }
       } else {
         // Fallback if ASSETS.fetch is not available (e.g., misconfiguration)
-        // This could be a 404 or a specific error message.
-        // For now, let's return a clear message indicating the issue.
-        console.log('env keys:', Object.keys(env));
-        if (env.ASSETS) {
-          console.log('typeof env.ASSETS:', typeof env.ASSETS);
-          if (typeof env.ASSETS === 'object') {
-            console.log('env.ASSETS keys:', Object.keys(env.ASSETS));
-          }
-        }
         console.warn('env.ASSETS.fetch is not available. Ensure [site] is configured in wrangler.toml for static assets.');
         return new Response('Static asset serving is not configured.', { status: 404 });
       }

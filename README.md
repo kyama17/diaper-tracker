@@ -55,6 +55,8 @@ diaper-tracker/
 
 ## セットアップ (Setup)
 
+**Note:** This section describes a setup for running the application potentially without Cloudflare Workers, or with a different build process. For local development using Cloudflare Workers (which is the primary setup for `src/index.js` and `wrangler.toml`), please refer to the "ローカル開発 (Local Development with Cloudflare Workers)" section under "Cloudflare Workers デプロイ設定".
+
 このアプリケーションはサーバーを必要としません。以下の簡単な手順ですぐに使い始められます：
 
 1. リポジトリをクローンまたはダウンロード
@@ -162,27 +164,62 @@ npm run start:frontend
     // ... (既存のミドルウェアとルート設定)
     module.exports = app; // app をエクスポート
     ```
--   **`src/index.js`:**
-    -   このファイルはプロジェクトのルート直下の `src` フォルダに配置されており、Worker のエントリーポイントとして機能します。
-    -   スクリプトは `backend/server.js` から `app` をインポートし、Cloudflare の `fetch` イベントを Express アプリが処理できるようにするための基本的なアダプターロジック構造を含んでいます。
-    ```javascript
-    // src/index.js の基本構造
-    import app from '../backend/server.js'; // backend/server.js へのパスを調整
+-   **`src/index.js` (Worker Entry Point):**
+    -   This file, located in the `src` directory, serves as the entry point for the Cloudflare Worker.
+    -   It handles incoming requests:
+        -   **Static Asset Serving**: For requests not matching API patterns (e.g., to `/`, `/index.html`, `/style.css`), it uses `env.ASSETS.fetch(request)` to serve files from the `./public` directory. This is configured by the `[site]` section in `wrangler.toml`. For navigation requests to paths not found in the `./public` directory (e.g., for client-side routes), it serves `/index.html` to enable Single Page Application (SPA) behavior.
+        -   **API Proxying**: For requests matching patterns like `/api/`, `/profile`, `/login`, `/logout`, it proxies the request to a backend service. The URL for this backend service is specified by the `BACKEND_SERVICE_URL` environment variable (e.g., `http://localhost:3000` for local development).
 
-    // Express アプリを Cloudflare Workers の fetch ハンドラに接続するアダプターが必要です。
-    // (例: 'hono' や他のアダプターライブラリを使用するか、カスタムで実装)
-    // このアダプターは Cloudflare Request を Express が理解できる形式に変換し、
-    // Express のレスポンスを Cloudflare Response に変換します。
+-   **`backend/server.js` (Backend API Service):**
+    -   This Node.js Express application, located in the `backend` directory, provides the actual API endpoints.
+    -   It must be running as a separate process for the Cloudflare Worker (`src/index.js`) to proxy requests to it during local development.
+    -   For deployed environments, this backend service would need to be hosted at the `BACKEND_SERVICE_URL` configured in Cloudflare.
 
-    export default {
-      async fetch(request, env, ctx) {
-        // ここにアダプターロジックを実装します。
-        // return await someAdapter(app)(request, env, ctx);
-        return new Response('Adapter logic for Express on Cloudflare Workers needed here.', { status: 501 });
-      }
-    };
-    ```
-    -   **注意**: 適切なアダプターの実装は主要な開発作業となります。
+### ローカル開発 (Local Development with Cloudflare Workers)
+
+To run this application locally using Cloudflare Workers for the frontend and proxy, you need to run two separate processes: the backend API service and the Wrangler development server.
+
+1.  **Start the Backend API Service:**
+    -   Navigate to the backend directory:
+        ```bash
+        cd backend
+        ```
+    -   Install dependencies for the backend:
+        ```bash
+        npm install
+        ```
+    -   The backend requires environment variables for database connection (e.g., `MONGODB_URI`) and Auth0 integration (`AUTH0_SECRET`, `AUTH0_BASE_URL`, `AUTH0_CLIENT_ID`, `AUTH0_ISSUER_BASE_URL`). Create a `.env` file in the `backend` directory and populate it with these values. Refer to `.env.example` in the root directory for the Auth0 variable names (though note that `MONGODB_URI` is also needed).
+        Example `backend/.env` structure:
+        ```env
+        MONGODB_URI="your_mongodb_connection_string"
+        AUTH0_SECRET="a_long_random_string_for_session_encryption"
+        AUTH0_BASE_URL="http://localhost:8787" # Or your deployed app URL
+        AUTH0_CLIENT_ID="your_auth0_client_id"
+        AUTH0_ISSUER_BASE_URL="https://your-auth0-domain.auth0.com"
+        # AUTH0_CLIENT_SECRET is optional if your app doesn't require it for the chosen flow
+        ```
+    -   Start the backend server:
+        ```bash
+        npm start
+        ```
+    -   You should see a message like `Server listening on http://localhost:3000`. Leave this terminal running.
+
+2.  **Start the Cloudflare Worker (Wrangler Dev Server):**
+    -   In a **new terminal window**, navigate to the project's root directory.
+    -   Install root dependencies (if you haven't already, mainly for Wrangler):
+        ```bash
+        npm install
+        ```
+    -   Run the Wrangler development server:
+        ```bash
+        npx wrangler dev
+        ```
+    -   This will start the Worker defined in `src/index.js`. It will serve static assets from `./public` and proxy API calls to `http://localhost:3000` (as configured in `wrangler.toml`'s `BACKEND_SERVICE_URL` for local development).
+
+3.  **Access the Application:**
+    -   Open your browser and go to the URL provided by `wrangler dev` (usually `http://localhost:8787`).
+
+This setup allows you to test the complete application flow locally, with the Worker handling frontend and proxying, and the separate Node.js server handling API requests.
 
 ### 2. Wrangler 設定 (`wrangler.toml`)
 
